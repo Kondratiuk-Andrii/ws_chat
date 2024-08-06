@@ -1,0 +1,27 @@
+{
+    "plugins": [
+        "prettier-plugin-organize-attributes",
+        "@trivago/prettier-plugin-sort-imports",
+        "prettier-plugin-tailwindcss"
+    ],
+    "printWidth": 100,
+    "tabWidth": 4,
+    "useTabs": false,
+    "semi": true,
+    "singleQuote": true,
+    "trailingComma": "es5",
+    "bracketSpacing": true,
+    "arrowParens": "always",
+    "bracketSameLine": false,
+    "vueIndentScriptAndStyle": true,
+    "htmlWhitespaceSensitivity": "ignore",
+    "singleAttributePerLine": false,
+    "importOrderSeparation": false,
+    "importOrderSortSpecifiers": true,
+    "importOrder": ["^vue(.*)$", "^@/(.*)$", "^pages/(.*)$", "^components/(.*)$", "^[./]"],
+
+    "wrapAttributes": "auto",
+    "wrapAttributesMinAttrs": 2,
+    "sortTailwindcssClasses": true,
+    "sortHtmlAttributes": "code-guide"
+}
