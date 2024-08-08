@@ -4,12 +4,12 @@
     import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
     import ChatWindow from '@/Pages/Chat/Partials/ChatWindow.vue';
     import { IChat, IMessage, IUser } from '@/types';
-    // import { route } from '../../../../vendor/tightenco/ziggy/src/js/index';
 
     const props = defineProps<{
         users: IUser[];
         chat: IChat;
         messages: IMessage[];
+        isLastPage: boolean;
     }>();
 
     const localMessages = ref([...props.messages]);
@@ -21,11 +21,14 @@
         '.store-message',
         (res: { message: IMessage }) => {
             res.message.is_owner = currentUserId.value === res.message.user_id;
-            localMessages.value.push(res.message);
-            router.patch(route('message_statuses.update'), {
-                message_id: res.message.id,
-                user_id: currentUserId.value,
-            });
+            localMessages.value.unshift(res.message);
+
+            if (usePage().url === `/chats/${props.chat.id}`) {
+                router.patch(route('message_statuses.update'), {
+                    message_id: res.message.id,
+                    user_id: currentUserId.value,
+                });
+            }
         }
     );
 </script>
@@ -34,18 +37,18 @@
     <Head title="Chat" />
     <authenticated-layout>
         <template #header>Chats</template>
-        <div class="flex items-start gap-4 msm:flex-col msm:gap-12">
-            <div class="w-1/4 rounded-xl bg-white p-3 shadow msm:w-full">
-                <h3 class="mb-4 text-center text-lg font-semibold text-gray-700">Users in Chat</h3>
-                <div class="flex justify-center gap-4 sm:flex-col" v-if="props.users">
-                    <div v-for="user in props.users" :key="user.id">
-                        <div
-                            class="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-slate-100 p-4"
-                        >
-                            <div>
-                                <p class="text-lg font-semibold text-gray-800">{{ user.name }}</p>
-                                <p class="text-sm text-gray-600">{{ user.email }}</p>
-                            </div>
+        <div class="flex flex-col gap-6 lg:flex-row lg:gap-12">
+            <div class="w-full rounded-lg bg-white p-6 shadow-md lg:w-1/4 mlg:order-2">
+                <h3 class="mb-6 text-center text-xl font-semibold text-gray-800">Users in Chat</h3>
+                <div class="space-y-4" v-if="props.users">
+                    <div
+                        class="rounded-lg bg-gray-50 p-4 transition hover:bg-gray-100"
+                        v-for="user in props.users"
+                        :key="user.id"
+                    >
+                        <div class="flex flex-col items-center">
+                            <p class="text-lg font-medium text-gray-900">{{ user.name }}</p>
+                            <p class="text-sm text-gray-600">{{ user.email }}</p>
                         </div>
                     </div>
                 </div>
@@ -55,6 +58,7 @@
                 :chat="props.chat"
                 :messages="localMessages"
                 :current-user-id="currentUserId"
+                :is-last-page="props.isLastPage"
             />
         </div>
     </authenticated-layout>

@@ -13,6 +13,11 @@ class Message extends Model
 
     protected $guarded = false;
 
+    public function getTimeAttribute()
+    {
+        return $this->created_at->diffForHumans();
+    }
+
     public function getIsOwnerAttribute()
     {
         return (int) $this->user_id === (int) auth()->id();
@@ -21,10 +26,5 @@ class Message extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
-    }
-
-    public function getTimeAttribute()
-    {
-        return $this->created_at->diffForHumans();
     }
 }

@@ -11,6 +11,7 @@ export interface IChat {
     users_ids: string;
     messages: IMessage[];
     unreadable_count: number;
+    last_message?: IMessage;
 }
 
 export interface IMessage {

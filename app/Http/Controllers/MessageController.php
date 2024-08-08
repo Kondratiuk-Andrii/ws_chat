@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\Message\StoreRequest;
+use App\Http\Resources\Message\MessageResource;
 use App\Services\Message\Service;
 
 class MessageController extends Controller
@@ -18,8 +19,8 @@ class MessageController extends Controller
     {
         $data = $request->validated();
 
-        $this->service->store($data);
+        $message = $this->service->store($data);
 
-        return redirect()->back();
+        return MessageResource::make($message);
     }
 }

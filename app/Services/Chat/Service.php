@@ -16,7 +16,7 @@ class Service
         try {
             DB::beginTransaction();
 
-            $data['title'] ??= $this->getChatTitle($userIds);
+            // $data['title'] ??= $this->getChatTitle($userIds);
 
             $chat = Chat::firstOrCreate(
                 ['user_ids' => $userIdsString, 'title' => $data['title']],
@@ -46,15 +46,15 @@ class Service
         return $userIds;
     }
 
-    private function getChatTitle(array $userIds): string
-    {
-        $users = User::whereIn('id', $userIds)->get(['name']);
-        $userNames = $users->pluck('name')->toArray();
+    // private function getChatTitle(array $userIds): string
+    // {
+    //     $users = User::whereIn('id', $userIds)->get(['name']);
+    //     $userNames = $users->pluck('name')->toArray();
 
-        if (count($userIds) > 2) {
-            return 'Group Chat - '.implode(', ', array_slice($userNames, 0, 4)).'...';
-        }
+    //     if (count($userIds) > 2) {
+    //         return 'Group Chat - '.implode(', ', array_slice($userNames, 0, 4)).'...';
+    //     }
 
-        return 'Chat - '.implode(', ', $userNames);
-    }
+    //     return 'Chat - '.implode(', ', $userNames);
+    // }
 }

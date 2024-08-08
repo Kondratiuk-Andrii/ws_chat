@@ -1,5 +1,6 @@
 <script setup lang="ts">
     import { router } from '@inertiajs/vue3';
+    import axios from 'axios';
     import { computed, nextTick, onMounted, ref, watch } from 'vue';
     import { IChat, IMessage, IUser } from '@/types';
 
@@ -8,9 +9,13 @@
         chat: IChat;
         messages: IMessage[];
         currentUserId: number;
+        isLastPage: boolean;
     }>();
 
     const body = ref('');
+    const page = ref(1);
+    const localMessages = ref<IMessage[]>(props.messages);
+    const isLastPage = ref(props.isLastPage);
 
     const userIds = computed(() => {
         return props.users
@@ -31,6 +36,7 @@
                 },
                 {
                     onFinish: () => {
+                        scrollToBottom();
                         body.value = '';
                     },
                 }
@@ -65,79 +71,97 @@
 
     /* Time Update Interval (End)*/
 
-    /* Scroll To Message (Start) */
+    /* Scroll To Last Message (Start) */
 
-    const scrollToMessage = (messageId: number) => {
+    const scrollToBottom = () => {
         nextTick(() => {
             const messagesContainer = document.getElementById('messages-container');
-            const messageHolder = document.getElementById(`message-${messageId}`);
-            if (messageHolder) {
-                messagesContainer?.scrollTo(0, messageHolder.offsetTop);
+            if (messagesContainer) {
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
             }
         });
     };
 
-    const lastMessageId = computed(() => props.messages.at(-1)?.id || null);
-
     onMounted(() => {
-        if (lastMessageId.value) {
-            scrollToMessage(lastMessageId.value);
-        }
+        scrollToBottom();
     });
 
-    watch(lastMessageId, (newId) => {
-        if (newId) {
-            scrollToMessage(newId);
-        }
-    });
+    watch(
+        () => props.messages,
+        () => {
+            if (page.value === 1) {
+                scrollToBottom();
+            }
+        },
+        { deep: true }
+    );
 
-    /* Scroll To Message (End) */
+    /* Scroll To Last Message (End) */
+
+    const getMoreMessages = () => {
+        axios.get(`/chats/${props.chat.id}?page=${++page.value}`).then(({ data }) => {
+            localMessages.value.push(...data.messages);
+            isLastPage.value = data.isLastPage;
+        });
+    };
 </script>
 
 <template>
-    <div class="w-3/4 rounded-xl bg-white p-3 shadow msm:w-full">
-        <h3 class="mb-4 text-center text-lg font-semibold text-gray-900">
+    <div class="w-full rounded-lg bg-white p-6 shadow-md lg:w-3/4 mlg:order-1">
+        <h3 class="mb-6 text-center text-xl font-semibold text-gray-800">
             {{ props.chat.title }}
         </h3>
-        <div class="flex flex-col gap-4" v-if="props.chat">
-            <!--Messages Window-->
+
+        <div class="flex flex-col space-y-6" v-if="props.chat">
+            <!-- Messages Window -->
             <div
-                class="transparent-scrollbar max-h-122 min-h-122 flex-1 space-y-3 overflow-y-auto rounded-xl bg-slate-200 p-3"
+                class="transparent-scrollbar max-h-124 min-h-124 relative flex-1 overflow-y-auto rounded-lg bg-gray-100 p-4 pt-16"
                 id="messages-container"
             >
-                <div class="mb-2" v-for="message in props.messages" :key="message.id">
-                    <!--Message-->
-                    <div
-                        class="flex justify-end text-right"
-                        v-if="message.is_owner"
-                        :id="`message-${message.id}`"
+                <!-- Load More Button -->
+                <div
+                    class="absolute inset-y-3 left-1/2 -translate-x-1/2 transform"
+                    v-show="!isLastPage"
+                >
+                    <button
+                        class="rounded-full bg-blue-500 px-4 py-2 text-white shadow-lg transition hover:bg-blue-600"
+                        @click="getMoreMessages"
                     >
-                        <div class="w-2/4 rounded-xl bg-blue-100 p-2 text-right shadow-sm">
-                            <p class="font-semibold text-gray-700">You</p>
-                            <p class="text-gray-700">{{ message.body }}</p>
-                            <span class="text-xs text-gray-400">{{ message.time }}</span>
-                        </div>
-                    </div>
-                    <div class="flex justify-start text-left" v-else :id="`message-${message.id}`">
-                        <div class="w-2/4 rounded-xl bg-gray-100 p-2 text-left shadow-sm">
-                            <p class="font-semibold text-gray-700">{{ message.user_name }}</p>
-                            <p class="text-gray-700">{{ message.body }}</p>
-                            <span class="text-xs text-gray-400">{{ message.time }}</span>
-                        </div>
+                        Load more...
+                    </button>
+                </div>
+                <div
+                    class="flex"
+                    v-for="message in localMessages.slice().reverse()"
+                    :key="message.id"
+                    :class="{ 'justify-end': message.is_owner, 'justify-start': !message.is_owner }"
+                >
+                    <div
+                        class="mb-4 w-3/4 rounded-lg p-4 shadow"
+                        :class="[
+                            { 'text-right': message.is_owner, 'text-left': !message.is_owner },
+                            { 'bg-blue-100': message.is_owner, 'bg-white': !message.is_owner },
+                        ]"
+                    >
+                        <p class="font-medium text-gray-900">
+                            {{ message.is_owner ? 'You' : message.user_name }}
+                        </p>
+                        <p class="text-gray-800">{{ message.body }}</p>
+                        <span class="text-xs text-gray-500">{{ message.time }}</span>
                     </div>
                 </div>
             </div>
             <!-- Message Input -->
-            <div class="flex items-center">
+            <div class="flex items-center space-x-2">
                 <input
-                    class="mr-2 flex-auto rounded-xl border p-2 transition-shadow duration-200 focus:border-blue-300 focus:outline-none focus:ring"
+                    class="min-w-0 flex-grow rounded border p-2 focus:border-blue-300 focus:outline-none focus:ring"
                     v-model="body"
+                    @keydown="handleKeydown"
                     placeholder="Type your message..."
                     type="text"
-                    @keydown="handleKeydown"
                 />
                 <button
-                    class="rounded-xl bg-blue-500 p-4 px-4 py-2 text-white transition-colors duration-200 hover:bg-blue-600"
+                    class="rounded bg-blue-500 px-4 py-2 text-white transition hover:bg-blue-600"
                     @click="sendMessage(body)"
                 >
                     Send

@@ -28,6 +28,7 @@ class ChatController extends Controller
         $userChats = $currentUser
             ->chats()
             ->has('messages')
+            ->with(['lastMessage', 'chatWith'])
             ->withCount('unreadableMessageStatuses')
             ->get();
         $chatsResource = ChatResource::collection($userChats);
@@ -47,14 +48,30 @@ class ChatController extends Controller
 
     public function show(Chat $chat)
     {
-        $messages = $chat->messages()->with('user')->get();
+        $page = request('page') ?? 1;
 
-        $chat->unreadableMessageStatuses()->update(['is_read' => true]);
+        $users = $chat->getUsers();
+        $messages = $chat->getMessagesWithPagination($page);
+
+        $chat->readMessages();
+
+        $isLastPage = $messages->onLastPage();
+
+        $messages = MessageResource::collection($messages)->resolve();
+
+        if ($page > 1) {
+
+            return response()->json([
+                'isLastPage' => $isLastPage,
+                'messages' => $messages,
+            ]);
+        }
 
         return inertia('Chat/Show', [
-            'users' => UserResource::collection($chat->users()->get()),
+            'users' => UserResource::collection($users),
             'chat' => ChatResource::make($chat),
-            'messages' => MessageResource::collection($messages),
+            'messages' => $messages,
+            'isLastPage' => $isLastPage,
         ],
         );
     }

@@ -21,11 +21,26 @@ class StoreRequest extends FormRequest
      */
     public function rules(): array
     {
+        $isGroupChat = $this->input('isGroup', false); // Используйте правильное имя параметра
+
         return [
-            'title' => 'nullable|string|max:255',
+            'title' => [$isGroupChat ? 'required' : 'nullable', 'string', 'max:255'],
+
             'user_ids' => 'required|array',
             'user_ids.*' => 'required|integer|exists:users,id',
 
+        ];
+    }
+
+    /**
+     * Get the error messages for the defined validation rules.
+     *
+     * @return array
+     */
+    public function messages()
+    {
+        return [
+            'title.required' => 'The title is required.',
         ];
     }
 }

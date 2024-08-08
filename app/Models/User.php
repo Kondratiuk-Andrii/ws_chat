@@ -53,4 +53,9 @@ class User extends Authenticatable
             'chat_id'
         );
     }
+
+    public function scopeAnotherUsers(Builder $builder)
+    {
+        return $builder->where('id', '!=', auth()->id())->get();
+    }
 }
